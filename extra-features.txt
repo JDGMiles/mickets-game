@@ -1,0 +1,9 @@
+This page simulates making the same bet repeatedly until a condition is met. It simulates this as many times as it can in the time allowed and then gives a report of the data generated.
+
+Starting Bankroll <£>
+Bet win probability <%> <decimal> <fraction>
+Bet win payout <decimal odds> <fractional odds> <American odds>
+Wager per bet [toggle] <fixed £> <% of bankroll, min-bet £, max-bet £>
+Keep betting until |bankrupt| |<fixed profit £> <profit % of bankroll>| |<made X bets>|
+Simulate for <seconds>
+Run Sim |!|

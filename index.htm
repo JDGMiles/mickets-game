@@ -2,78 +2,122 @@
 
 <head>
   <title>Micket's Game</title>
-  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="shortcut icon" href="https://jdgmiles.github.io/F3M8/favicon.ico">
+  <style>
+  body  {background-color: black;}
+  p {color:white; font-family:helvetica; font-size:25px;}
+  input {background-color: #333333; color:white; font-family:helvetica; font-size:25px;}
+  button {background-color: #333333; color:white; font-family:helvetica; font-size:40px;}
+  table {border: 3px solid white;}
+  td {border: 1px solid white; padding-left: 20px; padding-right: 20px}
+  </style>
 </head>
 
-<body onload="initialise()" style="background-color:black;"><center><table class="box" border="2" cellpadding="6">
-  <p>This page simulates making the same bet repeatedly until a condition is met. It simulates this as many times as it can in the time allowed and then gives a report of the data generated.</p>
+<body><center>
 
-  <tr>
-    <td>
-      <button style="font-family:helvetica; text-align:center; font-size:200%; width:300px; height:300px" onclick="play()"><a id="playbutton"></button>
+  <p>
+    This page simulates making the same bet repeatedly until either going bankrupt or achieving a specified profit.<br>
+    It simulates this the specified number of times, then gives a report of the results.<br>
+  </p>
+
+  <table>
+    <tr><td>
+      <p>
+        Starting Bankroll £<input id="startcash" type="text" value="2000" onblur="if(this.value==''){this.value='2000'; startingbankrollupdate()}" onchange="startingbankrollupdate()" onfocus="this.value = ''" style="width:100px"/>
+      </p>
     </td>
-    <td><button style="font-family:helvetica; text-align:center; font-size:200%; width:300px; height:300px" onclick="roll()"><a id="rollbutton"></button></td>
-        <td><button style="font-family:helvetica; text-align:center; font-size:200%; width:300px; height:300px" onclick="cash()"><a id="cashbutton"></button></td>
-</tr>
+    <td>
+      <p>
+        Bet win probability <input id="winchance" type="text" value="0.476190476" onblur="if(this.value==''){this.value='0.476190476'; probabilityupdate()}" onchange="probabilityupdate()" onfocus="this.value = ''" style="width:150px; text-align:right;"/>%
+      </p>
+    </td>
+    <td>
+      <p>
+        Bet win payout £<input id="winpayout" type="text" value="225" onblur="if(this.value==''){this.value='225'; payoutupdate()}" onchange="payoutupdate()" onfocus="this.value = ''" style="width:80px"/>
+      </p>
+    </td></tr>
+    <tr><td>
+      <p>
+        Wager per bet £<input id="wager" type="text" value="2" onblur="if(this.value==''){this.value='2'; wagerupdate()}" onchange="wagerupdate()" onfocus="this.value = ''" style="width:80px"/>
+      </p>
+    </td>
+    <td>
+      <p>
+        Bet until £<input id="goal" type="text" value="200" onblur="if(this.value==''){this.value='200'; goalupdate()}" onchange="goalupdate()" onfocus="this.value = ''" style="width:80px"/> in profit
+      </p>
+    </td>
+    <td>
+      <p>
+        Simulate <input id="trials" type="text" value="50000" onblur="if(this.value==''){this.value='50000'; trialsupdate()}" onchange="trialsupdate()" onfocus="this.value = ''" style="width:100px"/> times
+      </p>
+    </td></tr>
+    <tr><td>
+      <p style="text-align:center">
+        <button id="runbutton" onclick="runsim()">Run<br>Simulation!</button>
+      </p>
+    </td>
+    <td colspan="2" style="width:400px">
+      <p id="report" style="text-align:center">
+        <i style="font-size:60px">Report is generated here</i>
+      </p>
+    </td>
+  </tr>
+  </table>
 
-</table></center></body>
+</center></body>
 
 </html>
 
 <script type="text/javascript">
-var wallet=60;
-var tokens=0;
-var tokenvalue=7;
-var costtoplay=20;
-var rollvalue=0;
-var total=0;
-var state=2;
-var red="red";
-var green="green";
-var fontsize="font-size:300%";
+var startingbankroll = 2000000;
+var probability = (1/210);
+var payout = 225;
+var wager = 2;
+var goal = 200;
+var bankroll = 0;
+var running = 0;
+var betnumber = 0;
+var totalbets = 0;
+var bankrupt = 0;
+var trials = 50000;
+var today = new Date();
 
-function initialise() {
-		document.getElementById("playbutton").innerHTML="<b>Play</b> (<font color="+red+">$"+costtoplay+"</font>)<br><br>Wallet: $"+wallet;
-		document.getElementById("rollbutton").innerHTML="<font style="+fontsize+">&#9786;</font>";
-		document.getElementById("cashbutton").innerHTML="<b>Cash Tokens</b><br><br>Tokens: "+tokens+" (= $<font color="+green+">"+tokens*tokenvalue+"</font>)";
-	}
+function startingbankrollupdate(){startingbankroll=parseFloat(document.getElementById("startcash").value);}
+function probabilityupdate(){probability=parseFloat(document.getElementById("winchance").value)/100;}
+function payoutupdate(){payout=parseFloat(document.getElementById("winpayout").value);}
+function wagerupdate(){wager=parseFloat(document.getElementById("wager").value);}
+function goalupdate(){goal=parseFloat(document.getElementById("goal").value);}
+function trialsupdate(){trials=parseFloat(document.getElementById("trials").value);}
 
-
-function play() {
-	if(state==2){state=0;}
-	if(state==0 && wallet>(costtoplay-1)){
-		wallet-=costtoplay;
-		total=0;
-		document.getElementById("rollbutton").innerHTML="<b>Click to Roll!</b>";
-		document.getElementById("playbutton").innerHTML="<b>Go! &#8594;</b><br><br>Wallet: $"+wallet;
-		state=1;
-	}
+function runsim(){
+  if(!running){document.getElementById("runbutton").innerHTML = "Running<br>Simulation..."; setTimeout(sim, 50);}
 }
 
-function roll() {
-	if(state==1){
-		tokens++;
-		document.getElementById("cashbutton").innerHTML="<b>Cash Tokens</b><br><br>Tokens: "+tokens+" (= $<font color="+green+">"+tokens*tokenvalue+"</font>)";
-		rollvalue=Math.random();
-		document.getElementById("rollbutton").innerHTML="<font color="+green+">"+(Math.floor(total*100))/100+"</font> + "+(Math.floor(rollvalue*100))/100+" = <font color="+green+">"+(Math.floor((rollvalue+total)*100))/100+"</font><br><br><b>Safe!</b>";
-		if((rollvalue+total)>1){
-		document.getElementById("rollbutton").innerHTML="<font color="+green+">"+(Math.floor(total*100))/100+"</font> + "+(Math.floor(rollvalue*100))/100+" = <font color="+red+">"+(Math.floor((rollvalue+total)*100))/100+"</font><br><br><b>BUST!</b>";}
-		total+=rollvalue;
-		if((total)>1){
-			state=0;
-			document.getElementById("playbutton").innerHTML="<b>Play Again</b> (<font color="+red+">$20</font>)<br><br>Wallet: $"+wallet;
+function sim(){
+  startingbankrollupdate();
+  probabilityupdate();
+  payoutupdate();
+  wagerupdate();
+  goalupdate();
+  trialsupdate();
+  bankrupt=0;
+  totalbets=0;
+  running=1;
+
+  for(var i=0; i<trials; i++){
+    bankroll = startingbankroll;
+		betnumber = 0;
+		while(bankroll>0 && (bankroll-startingbankroll)<goal){
+			betnumber++;
+			bankroll=bankroll-wager;
+			if(Math.random()<=probability){bankroll=bankroll+(wager*payout);}
 		}
-	}
-
+		if(bankroll>startingbankroll){totalbets=totalbets+betnumber;}
+		else{bankrupt++;}
+  }
+  running=0;
+  document.getElementById("runbutton").innerHTML = "Run<br>Simulation!";
+  document.getElementById("report").innerHTML = "In "+trials+" sessions, we went bankrupt "+bankrupt+" times ("+Math.floor(100*(bankrupt/trials))+"."+(Math.round(10000*(bankrupt/trials))%100)+"%) and made at least £"+goal+" profit otherwise, taking on average "+Math.floor(totalbets/(trials-bankrupt))+"."+(Math.round(100*totalbets/(trials-bankrupt))%100)+" bets to achieve that profit.";
 }
-
-function cash() {
-	wallet+=(tokenvalue*tokens);
-	tokens=0;
-	document.getElementById("cashbutton").innerHTML="<b>Cash Tokens</b><br><br>Tokens: "+tokens+" (= $<font color="+green+">"+tokens*tokenvalue+"</font>)";
-	if(state==0){document.getElementById("playbutton").innerHTML="<b>Play Again</b> (<font color="+red+">$20</font>)<br><br>Wallet: $"+wallet;}
-	if(state==1){document.getElementById("playbutton").innerHTML="<b>Go! &#8594;</b><br><br>Wallet: $"+wallet}
-}
-
 
 </script>
